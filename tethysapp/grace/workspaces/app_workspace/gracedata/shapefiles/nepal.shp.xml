@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="en"><Esri><CreaDate>20170424</CreaDate><CreaTime>15462000</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><itemProps><itemLocation><linkage Sync="TRUE">Server=192.168.10.67; Service=sde:sqlserver:192.168.10.67; Database=gdbNepal; Version=dbo.DEFAULT</linkage><protocol Sync="TRUE">ArcSDE Connection</protocol></itemLocation></itemProps></DataProperties></Esri></metadata>
