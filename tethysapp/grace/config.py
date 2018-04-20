@@ -1,4 +1,4 @@
-BASE_PATH = '/home/tethys/apps/tethysapps/GRACE/tethysapp/grace/workspaces/app_workspace/gracedata/'
+BASE_PATH = '/home/tethys/apps/GRACE/tethysapp/grace/workspaces/app_workspace/gracedata/'
 
 
 
