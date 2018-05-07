@@ -21,18 +21,7 @@
 <h6>{{display_name}}</h6>
 {% gizmo select_input select_storage_type %}
 
-<script>
-    $(function(){
-      // bind change event to select
-      $('#select_storage_type').on('change', function () {
-          var url = $(this).val(); // get selected value
-          if (url) { // require a URL
-              window.location = url; // redirect
-          }
-          return false;
-      });
-    });
-</script>
+
 <br>
 {% gizmo select_input select_layer %}
 <br>
@@ -49,9 +38,18 @@
     {% csrf_token %}
     <input type="text" id="region-info" name="region-info" value="{{region_id}}" hidden>
     <input type="text" name="point-lat-lon" id="point-lat-lon" hidden>
-    <!--<input type="text" name="poly-lat-lon" id="poly-lat-lon" hidden>-->
-    <!--<input type="text" name="shp-lat-lon" id="shp-lat-lon" hidden>-->
+    <input type="text" name="poly-lat-lon" id="poly-lat-lon" hidden>
+    <input type="text" name="shp-lat-lon" id="shp-lat-lon" hidden>
     <button type="button" id="btn-get-plot" name="btn-get-plot" class="btn btn-default">Show Plot</button>
+</form>
+
+<div class="warning"></div>
+
+<form id="get-reg-plot" name="get-reg-plot" action="get_reg_plot/" method="POST">
+    {% csrf_token %}
+    <input type="text" id="region-info" name="region-info" value="{{region_id}}" hidden>
+    <input type="text" name="poly-lat-lon" id="poly-lat-lon" hidden>
+    <input type="text" name="shp-lat-lon" id="shp-lat-lon" hidden>
 </form>
 {% endblock%}
 
@@ -99,11 +97,18 @@
 <!--The div that stores important information about the layers,service folder, timestep and max depth. This will be retrieved in the JavaScript for further processing.-->
 <div id="region" name="region" data-map-center="{{map_center}}" data-wms-url="{{wms_url}}" data-layers-length="{{layers_length}}" data-range="{{range}}" data-bbox="{{bbox}}" data-tracker="{{x_tracker}}" data-range-min="-50" data-range-max="50" data-color-bar="{{color_bar}}" style="display:none;"></div>
 <br>
-    {% gizmo plot_view grace_plot %}
+    <div>
+        <div class="chart-wrapper">
+            <div class="chart-inner">
+                <div id="reg-plot" name="reg-plot" style="height:350px;width:100%" ></div>
+            </div>
+        </div>
+    </div>
 <br>
     <div>
         <div class="chart-wrapper">
             <div class="chart-inner">
+                <div align="center" class="flex-container-row"><img id="view-file-loading" class="view-file hidden" src="/static/grace/images/loader.gif" /></div>
                 <div id="plotter" name="plotter" style="height:350px;width:100%" ></div>
             </div>
         </div>
@@ -113,5 +118,5 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'grace/js/map.min.js' %}" type="text/javascript"></script>
+<script src="{% static 'grace/js/map.js' %}" type="text/javascript"></script>
 {% endblock %}

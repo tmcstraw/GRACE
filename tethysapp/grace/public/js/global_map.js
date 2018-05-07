@@ -356,7 +356,8 @@ var LIBRARY_OBJECT = (function() {
         map.removeLayer(wms_layer);
         var color_str = cbar_str();
         var store_name = $("#select_layer").find('option:selected').val();
-        var layer_name = 'tot_global:'+store_name;
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var layer_name = storage_type+'_global:'+store_name;
 
         var sld_string = '<StyledLayerDescriptor version="1.0.0"><NamedLayer><Name>'+layer_name+'</Name><UserStyle><FeatureTypeStyle><Rule>\
         <RasterSymbolizer> \
@@ -372,7 +373,7 @@ var LIBRARY_OBJECT = (function() {
         </StyledLayerDescriptor>';
 
         wms_source = new ol.source.ImageWMS({
-            url: 'http://tethys.byu.edu:8181/geoserver/wms',
+            url: 'http://127.0.0.1:8181/geoserver/wms',
             params: {'LAYERS':layer_name,'SLD_BODY':sld_string},
             serverType: 'geoserver',
             crossOrigin: 'Anonymous'
@@ -389,8 +390,8 @@ var LIBRARY_OBJECT = (function() {
     update_wms = function(date_str){
         // map.removeLayer(wms_layer);
         var color_str = cbar_str();
-
-        var layer_name = 'tot_global:'+date_str;
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var layer_name = storage_type+'_global:'+date_str;
         var sld_string = '<StyledLayerDescriptor version="1.0.0"><NamedLayer><Name>'+layer_name+'</Name><UserStyle><FeatureTypeStyle><Rule>\
         <RasterSymbolizer> \
         <ColorMap> \
@@ -511,7 +512,7 @@ var LIBRARY_OBJECT = (function() {
 
     get_plot = function(){
         if($("#poly-lat-lon").val() == "" && $("#point-lat-lon").val() == "" && $("#shp-lat-lon").val() == ""){
-            $('.warning').html('<b>No feature selected. Please create a feature using the map interaction dropdown. Plot cannot be generated without a feature.</b>');
+            $('.warning').html('<b>No feature currently selected. Please create a feature using the map interaction dropdown. Plot for specific geographical location cannot be generated without a feature.</b>');
             return false;
         }else{
             $('.warning').html('');
@@ -522,10 +523,12 @@ var LIBRARY_OBJECT = (function() {
         $("#btn-get-plot").attr("disabled", true);
         $loading.removeClass('hidden');
         $("#plotter").addClass('hidden');
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var storage_name = $("#select_storage_type").find('option:selected').text();
 
         $.ajax({
             type:"POST",
-            url:'/apps/grace/plot-global-tot/',
+            url:'/apps/grace/plot-global-'+storage_type+'/',
             dataType:'HTML',
             data:datastring,
             success:function(result) {
@@ -555,7 +558,7 @@ var LIBRARY_OBJECT = (function() {
                     },
                     yAxis: {
                         title: {
-                            text: "Total Terrestrial Water Storage Anomaly (cm)"
+                            text: storage_name+" Anomaly (cm)"
                         }
 
                     },
@@ -564,7 +567,7 @@ var LIBRARY_OBJECT = (function() {
                     },
                     series: [{
                         data:json_response.values,
-                        name: "Total Terrestrial Water Storage Anomaly (cm)"
+                        name: storage_name+" Anomaly (cm)"
                     }]
                 });
                 $("#plotter").removeClass('hidden');
@@ -576,6 +579,7 @@ var LIBRARY_OBJECT = (function() {
     };
 
     $("#btn-get-plot").on('click',get_plot);
+
 
     animate = function(){
         var sliderVal = $("#slider").slider("value");
@@ -727,6 +731,11 @@ var LIBRARY_OBJECT = (function() {
             add_wms();
             var selected_option = $(this).find('option:selected').index();
             $("#slider").slider("value", selected_option);
+        }).change();
+
+        $("#select_storage_type").change(function(){
+            add_wms();
+            get_plot();
         }).change();
 
 

@@ -1669,18 +1669,24 @@ def process_shapefile_highres_end(shapefile,url,uname,pwd,region_name,GRACE_NETC
 
         for JS_dom_tot in range(IS_dom_tot):
             JS_grc_lon = IV_dom_lon[JS_dom_tot]
+            print('lon')
             JS_grc_lat = IV_dom_lat[JS_dom_tot]
+            print('lat')
             ZS_dom_avg = ZV_dom_avg[JS_dom_tot]
             if (ZM_grc_scl.mask[JS_grc_lat, JS_grc_lon]):
                 ZS_dom_scl = 0
+                print(ZS_dom_scl)
             else:
                 ZS_dom_scl = ZM_grc_scl[JS_grc_lat, JS_grc_lon]
+                print(ZS_dom_scl)
             for JS_grc_time in range(IS_grc_time):
                 lwe_thickness[JS_grc_time, JS_grc_lat, JS_grc_lon] = \
                     f.variables['lwe_thickness'][JS_grc_time, JS_grc_lat, JS_grc_lon] \
                     - ZS_dom_avg
+                print('time step success')
 
         time[:] = f.variables['time'][:]
+        print(time[:])
 
 
         # *******************************************************************************

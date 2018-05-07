@@ -1,5 +1,5 @@
 from tethys_sdk.base import TethysAppBase, url_map_maker
-from tethys_sdk.app_settings import PersistentStoreDatabaseSetting, PersistentStoreConnectionSetting
+from tethys_sdk.app_settings import PersistentStoreDatabaseSetting, PersistentStoreConnectionSetting, SpatialDatasetServiceSetting
 
 class Grace(TethysAppBase):
     """
@@ -106,31 +106,25 @@ class Grace(TethysAppBase):
                    url='grace/plot-region-gw',
                    controller='grace.ajax_controllers.plot_region_gw'),
 
+            UrlMap(name='plot-reg-tot',
+                   url='grace/plot-reg-tot',
+                   controller='grace.ajax_controllers.plot_reg_tot'),
+            UrlMap(name='plot-reg-sw',
+                   url='grace/plot-reg-sw',
+                   controller='grace.ajax_controllers.plot_reg_sw'),
+            UrlMap(name='plot-reg-soil',
+                   url='grace/plot-reg-soil',
+                   controller='grace.ajax_controllers.plot_reg_soil'),
+            UrlMap(name='plot-reg-gw',
+                   url='grace/plot-reg-gw',
+                   controller='grace.ajax_controllers.plot_reg_gw'),
+
             UrlMap(name='api_get_point_values',
                    url='grace/api/GetPointValues',
                    controller='grace.api.api_get_point_values'),
             UrlMap(name='upload-shp',
                    url='grace/upload-shp',
                    controller='grace.ajax_controllers.upload_shp'),
-            UrlMap(name='global-map-sw',
-                   url='grace/global-map/sw',
-                   controller='grace.controllers.global_map_sw'),
-            UrlMap(name='global-map-soil',
-                   url='grace/global-map/soil',
-                   controller='grace.controllers.global_map_soil'),
-            UrlMap(name='global-map-gw',
-                   url='grace/global-map/gw',
-                   controller='grace.controllers.global_map_gw'),
-
-            UrlMap(name='map-sw',
-                   url='grace/map/sw',
-                   controller='grace.controllers.map_sw'),
-            UrlMap(name='map-soil',
-                   url='grace/map/soil',
-                   controller='grace.controllers.map_soil'),
-            UrlMap(name='map-gw',
-                   url='grace/map/gw',
-                   controller='grace.controllers.map_gw'),
         )
 
         return url_maps
@@ -149,3 +143,18 @@ class Grace(TethysAppBase):
         )
 
         return ps_settings
+
+    def spatial_dataset_service_settings(self):
+        """
+        Example spatial_dataset_service_settings method.
+        """
+        sds_settings = (
+            SpatialDatasetServiceSetting(
+                name='main_geoserver',
+                description='spatial dataset service for app to use',
+                engine=SpatialDatasetServiceSetting.GEOSERVER,
+                required=True,
+            ),
+        )
+
+        return sds_settings

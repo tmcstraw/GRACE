@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required,user_passes_test
 from django.views.decorators.csrf import csrf_exempt
 from tethys_sdk.gizmos import *
 from utilities import *
-import json
+import json,time
 from tethys_dataset_services.engines import GeoServerSpatialDatasetEngine
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +20,442 @@ import geoserver
 
 #GRACE_NETCDF_DIR = '/grace/'
 #GLOBAL_NETCDF_DIR = '/grace/global/'
+
+def plot_reg_tot(request):
+    return_obj = {}
+    return_obj = {}
+    if request.is_ajax() and request.method == 'POST':
+        info = request.POST
+
+        region_id = info.get('region-info')
+        Session = Grace.get_persistent_store_database('main_db', as_sessionmaker=True)
+        session = Session()
+
+
+
+        region = session.query(Region).get(region_id)
+        display_name = region.display_name
+        region_store = ''.join(display_name.split()).lower()
+
+        FILE_DIR = os.path.join(TOTAL_NETCDF_DIR, '')
+
+        region_dir = os.path.join(FILE_DIR + region_store, '')
+
+        geotiff_dir = os.path.join(region_dir+"geotiff")
+
+
+        geoserver = session.query(Geoserver).get(region.geoserver_id)
+        geoserver_url = geoserver.url
+        region_store = ''.join(display_name.split()).lower()
+
+        bbox = [float(x) for x in region.latlon_bbox.strip("(").strip(")").split(',')]
+        json.dumps(bbox)
+
+        sorted_files = sorted(os.listdir(geotiff_dir), key=lambda x: datetime.strptime(x, '%Y_%m_%d.tif'))
+        layers_length = len(sorted_files)
+        grace_layer_options = []
+
+        for file in sorted_files:
+            year = int(file[:-4].split('_')[0])
+            month = int(file[:-4].split('_')[1])
+            day = int(file[:-4].split('_')[2])
+            date_str = datetime(year,month,day)
+            date_str = date_str.strftime("%Y %B %d")
+            grace_layer_options.append([date_str,file[:-4]+"_"+region_store])
+
+
+
+        csv_file = region_dir+region_store+".csv"
+        with open(csv_file, 'rb') as f:
+            reader = csv.reader(f)
+            csvlist = list(reader)
+
+        volume_time_series = []
+        volume = []
+        x_tracker = []
+        formatter_string = "%m/%d/%Y"
+        for item in csvlist:
+            mydate = datetime.strptime(item[0], formatter_string)
+            mydate = time.mktime(mydate.timetuple()) * 1000
+            volume_time_series.append([mydate, float(item[1])])
+            volume.append(float(item[1]))
+            x_tracker.append(mydate)
+
+        range = [round(min(volume), 2), round(max(volume), 2)]
+        range = json.dumps(range)
+
+    # Configure the time series Plot View
+    #     grace_plot = TimeSeries(
+    #         engine='highcharts',
+    #         title=display_name+ ' GLDAS Data',
+    #         y_axis_title='Total Surface Water Storage Anomaly',
+    #         y_axis_units='cm',
+    #         series=[
+    #             {
+    #                 'name': 'Height of Liquid Water',
+    #                 'color': '#0066ff',
+    #                 'data': volume_time_series,
+    #             },
+    #             {
+    #                 'name': 'Tracker',
+    #                 'color': '#ff0000',
+    #                 'data': [[min(x_tracker), round(min(volume), 2)], [min(x_tracker), round(max(volume), 2)]]
+    #             },
+    #         ],
+    #         width='100%',
+    #         height='300px'
+    #     )
+
+        wms_url = geoserver_url[:-5]+"wms"
+        color_bar = get_color_bar()
+        color_bar = json.dumps(color_bar)
+
+        if bbox[0] < 0 and bbox[2] < 0:
+            map_center = [( (360+(int(bbox[0])))+(360+(int(bbox[2])))) / 2,(int(bbox[1])+int(bbox[3])) / 2]
+        else:
+            map_center = [(int(bbox[0]) + int(bbox[2])) / 2, (int(bbox[1]) + int(bbox[3])) / 2]
+        json.dumps(map_center)
+        json.dumps(x_tracker)
+
+        return_obj['data']=volume_time_series
+        return_obj['xmin']=min(x_tracker)
+        return_obj['volmin']=round(min(volume), 2)
+        return_obj['volmax']=round(max(volume), 2)
+        return_obj['displayname']= display_name
+
+
+        # return_obj["success"] = "success"
+
+    return JsonResponse(return_obj)
+
+
+def plot_reg_sw(request):
+    return_obj = {}
+    return_obj = {}
+    if request.is_ajax() and request.method == 'POST':
+        info = request.POST
+
+        region_id = info.get('region-info')
+        print(region_id)
+        print("this is the reg id")
+        Session = Grace.get_persistent_store_database('main_db', as_sessionmaker=True)
+        session = Session()
+
+
+
+        region = session.query(Region).get(region_id)
+        display_name = region.display_name
+        region_store = ''.join(display_name.split()).lower()
+
+        FILE_DIR = os.path.join(SW_NETCDF_DIR, '')
+
+        region_dir = os.path.join(FILE_DIR + region_store, '')
+
+        geotiff_dir = os.path.join(region_dir+"geotiff")
+
+
+        geoserver = session.query(Geoserver).get(region.geoserver_id)
+        geoserver_url = geoserver.url
+        region_store = ''.join(display_name.split()).lower()
+
+        bbox = [float(x) for x in region.latlon_bbox.strip("(").strip(")").split(',')]
+        json.dumps(bbox)
+
+        sorted_files = sorted(os.listdir(geotiff_dir), key=lambda x: datetime.strptime(x, '%Y_%m_%d.tif'))
+        layers_length = len(sorted_files)
+        grace_layer_options = []
+
+        for file in sorted_files:
+            year = int(file[:-4].split('_')[0])
+            month = int(file[:-4].split('_')[1])
+            day = int(file[:-4].split('_')[2])
+            date_str = datetime(year,month,day)
+            date_str = date_str.strftime("%Y %B %d")
+            grace_layer_options.append([date_str,file[:-4]+"_"+region_store])
+
+
+
+        csv_file = region_dir+region_store+".csv"
+        with open(csv_file, 'rb') as f:
+            reader = csv.reader(f)
+            csvlist = list(reader)
+
+        volume_time_series = []
+        volume = []
+        x_tracker = []
+        formatter_string = "%m/%d/%Y"
+        for item in csvlist:
+            mydate = datetime.strptime(item[0], formatter_string)
+            mydate = time.mktime(mydate.timetuple()) * 1000
+            volume_time_series.append([mydate, float(item[1])])
+            volume.append(float(item[1]))
+            x_tracker.append(mydate)
+
+        range = [round(min(volume), 2), round(max(volume), 2)]
+        range = json.dumps(range)
+
+    # Configure the time series Plot View
+    #     grace_plot = TimeSeries(
+    #         engine='highcharts',
+    #         title=display_name+ ' GLDAS Data',
+    #         y_axis_title='Total Surface Water Storage Anomaly',
+    #         y_axis_units='cm',
+    #         series=[
+    #             {
+    #                 'name': 'Height of Liquid Water',
+    #                 'color': '#0066ff',
+    #                 'data': volume_time_series,
+    #             },
+    #             {
+    #                 'name': 'Tracker',
+    #                 'color': '#ff0000',
+    #                 'data': [[min(x_tracker), round(min(volume), 2)], [min(x_tracker), round(max(volume), 2)]]
+    #             },
+    #         ],
+    #         width='100%',
+    #         height='300px'
+    #     )
+
+        wms_url = geoserver_url[:-5]+"wms"
+        color_bar = get_color_bar()
+        color_bar = json.dumps(color_bar)
+
+        if bbox[0] < 0 and bbox[2] < 0:
+            map_center = [( (360+(int(bbox[0])))+(360+(int(bbox[2])))) / 2,(int(bbox[1])+int(bbox[3])) / 2]
+        else:
+            map_center = [(int(bbox[0]) + int(bbox[2])) / 2, (int(bbox[1]) + int(bbox[3])) / 2]
+        json.dumps(map_center)
+        json.dumps(x_tracker)
+
+        return_obj['data']=volume_time_series
+        return_obj['xmin']=min(x_tracker)
+        return_obj['volmin']=round(min(volume), 2)
+        return_obj['volmax']=round(max(volume), 2)
+        return_obj['displayname']= display_name
+
+
+        # return_obj["success"] = "success"
+
+    return JsonResponse(return_obj)
+
+def plot_reg_soil(request):
+    return_obj = {}
+    return_obj = {}
+    if request.is_ajax() and request.method == 'POST':
+        info = request.POST
+
+        region_id = info.get('region-info')
+        print(region_id)
+        print("this is the reg id")
+        Session = Grace.get_persistent_store_database('main_db', as_sessionmaker=True)
+        session = Session()
+
+
+
+        region = session.query(Region).get(region_id)
+        display_name = region.display_name
+        region_store = ''.join(display_name.split()).lower()
+
+        FILE_DIR = os.path.join(SOIL_NETCDF_DIR, '')
+
+        region_dir = os.path.join(FILE_DIR + region_store, '')
+
+        geotiff_dir = os.path.join(region_dir+"geotiff")
+
+
+        geoserver = session.query(Geoserver).get(region.geoserver_id)
+        geoserver_url = geoserver.url
+        region_store = ''.join(display_name.split()).lower()
+
+        bbox = [float(x) for x in region.latlon_bbox.strip("(").strip(")").split(',')]
+        json.dumps(bbox)
+
+        sorted_files = sorted(os.listdir(geotiff_dir), key=lambda x: datetime.strptime(x, '%Y_%m_%d.tif'))
+        layers_length = len(sorted_files)
+        grace_layer_options = []
+
+        for file in sorted_files:
+            year = int(file[:-4].split('_')[0])
+            month = int(file[:-4].split('_')[1])
+            day = int(file[:-4].split('_')[2])
+            date_str = datetime(year,month,day)
+            date_str = date_str.strftime("%Y %B %d")
+            grace_layer_options.append([date_str,file[:-4]+"_"+region_store])
+
+
+
+        csv_file = region_dir+region_store+".csv"
+        with open(csv_file, 'rb') as f:
+            reader = csv.reader(f)
+            csvlist = list(reader)
+
+        volume_time_series = []
+        volume = []
+        x_tracker = []
+        formatter_string = "%m/%d/%Y"
+        for item in csvlist:
+            mydate = datetime.strptime(item[0], formatter_string)
+            mydate = time.mktime(mydate.timetuple()) * 1000
+            volume_time_series.append([mydate, float(item[1])])
+            volume.append(float(item[1]))
+            x_tracker.append(mydate)
+
+        range = [round(min(volume), 2), round(max(volume), 2)]
+        range = json.dumps(range)
+
+    # Configure the time series Plot View
+    #     grace_plot = TimeSeries(
+    #         engine='highcharts',
+    #         title=display_name+ ' GLDAS Data',
+    #         y_axis_title='Total Surface Water Storage Anomaly',
+    #         y_axis_units='cm',
+    #         series=[
+    #             {
+    #                 'name': 'Height of Liquid Water',
+    #                 'color': '#0066ff',
+    #                 'data': volume_time_series,
+    #             },
+    #             {
+    #                 'name': 'Tracker',
+    #                 'color': '#ff0000',
+    #                 'data': [[min(x_tracker), round(min(volume), 2)], [min(x_tracker), round(max(volume), 2)]]
+    #             },
+    #         ],
+    #         width='100%',
+    #         height='300px'
+    #     )
+
+        wms_url = geoserver_url[:-5]+"wms"
+        color_bar = get_color_bar()
+        color_bar = json.dumps(color_bar)
+
+        if bbox[0] < 0 and bbox[2] < 0:
+            map_center = [( (360+(int(bbox[0])))+(360+(int(bbox[2])))) / 2,(int(bbox[1])+int(bbox[3])) / 2]
+        else:
+            map_center = [(int(bbox[0]) + int(bbox[2])) / 2, (int(bbox[1]) + int(bbox[3])) / 2]
+        json.dumps(map_center)
+        json.dumps(x_tracker)
+
+        return_obj['data']=volume_time_series
+        return_obj['xmin']=min(x_tracker)
+        return_obj['volmin']=round(min(volume), 2)
+        return_obj['volmax']=round(max(volume), 2)
+        return_obj['displayname']= display_name
+
+
+        # return_obj["success"] = "success"
+
+    return JsonResponse(return_obj)
+
+def plot_reg_gw(request):
+    return_obj = {}
+    return_obj = {}
+    if request.is_ajax() and request.method == 'POST':
+        info = request.POST
+
+        region_id = info.get('region-info')
+        print(region_id)
+        print("this is the reg id")
+        Session = Grace.get_persistent_store_database('main_db', as_sessionmaker=True)
+        session = Session()
+
+
+
+        region = session.query(Region).get(region_id)
+        display_name = region.display_name
+        region_store = ''.join(display_name.split()).lower()
+
+        FILE_DIR = os.path.join(GW_NETCDF_DIR, '')
+
+        region_dir = os.path.join(FILE_DIR + region_store, '')
+
+        geotiff_dir = os.path.join(region_dir+"geotiff")
+
+
+        geoserver = session.query(Geoserver).get(region.geoserver_id)
+        geoserver_url = geoserver.url
+        region_store = ''.join(display_name.split()).lower()
+
+        bbox = [float(x) for x in region.latlon_bbox.strip("(").strip(")").split(',')]
+        json.dumps(bbox)
+
+        sorted_files = sorted(os.listdir(geotiff_dir), key=lambda x: datetime.strptime(x, '%Y_%m_%d.tif'))
+        layers_length = len(sorted_files)
+        grace_layer_options = []
+
+        for file in sorted_files:
+            year = int(file[:-4].split('_')[0])
+            month = int(file[:-4].split('_')[1])
+            day = int(file[:-4].split('_')[2])
+            date_str = datetime(year,month,day)
+            date_str = date_str.strftime("%Y %B %d")
+            grace_layer_options.append([date_str,file[:-4]+"_"+region_store])
+
+
+
+        csv_file = region_dir+region_store+".csv"
+        with open(csv_file, 'rb') as f:
+            reader = csv.reader(f)
+            csvlist = list(reader)
+
+        volume_time_series = []
+        volume = []
+        x_tracker = []
+        formatter_string = "%m/%d/%Y"
+        for item in csvlist:
+            mydate = datetime.strptime(item[0], formatter_string)
+            mydate = time.mktime(mydate.timetuple()) * 1000
+            volume_time_series.append([mydate, float(item[1])])
+            volume.append(float(item[1]))
+            x_tracker.append(mydate)
+
+        range = [round(min(volume), 2), round(max(volume), 2)]
+        range = json.dumps(range)
+
+    # Configure the time series Plot View
+    #     grace_plot = TimeSeries(
+    #         engine='highcharts',
+    #         title=display_name+ ' GLDAS Data',
+    #         y_axis_title='Total Surface Water Storage Anomaly',
+    #         y_axis_units='cm',
+    #         series=[
+    #             {
+    #                 'name': 'Height of Liquid Water',
+    #                 'color': '#0066ff',
+    #                 'data': volume_time_series,
+    #             },
+    #             {
+    #                 'name': 'Tracker',
+    #                 'color': '#ff0000',
+    #                 'data': [[min(x_tracker), round(min(volume), 2)], [min(x_tracker), round(max(volume), 2)]]
+    #             },
+    #         ],
+    #         width='100%',
+    #         height='300px'
+    #     )
+
+        wms_url = geoserver_url[:-5]+"wms"
+        color_bar = get_color_bar()
+        color_bar = json.dumps(color_bar)
+
+        if bbox[0] < 0 and bbox[2] < 0:
+            map_center = [( (360+(int(bbox[0])))+(360+(int(bbox[2])))) / 2,(int(bbox[1])+int(bbox[3])) / 2]
+        else:
+            map_center = [(int(bbox[0]) + int(bbox[2])) / 2, (int(bbox[1]) + int(bbox[3])) / 2]
+        json.dumps(map_center)
+        json.dumps(x_tracker)
+
+        return_obj['data']=volume_time_series
+        return_obj['xmin']=min(x_tracker)
+        return_obj['volmin']=round(min(volume), 2)
+        return_obj['volmax']=round(max(volume), 2)
+        return_obj['displayname']= display_name
+
+
+        # return_obj["success"] = "success"
+
+    return JsonResponse(return_obj)
+
 
 def plot_region_tot(request):
     return_obj = {}

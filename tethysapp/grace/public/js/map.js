@@ -26,6 +26,7 @@ var GRACE_MAP = (function() {
         current_layer,
         element,
         $get_plot,
+        $get_reg_plot,
         layers_length,
         layers,
         layers_dict,
@@ -51,7 +52,7 @@ var GRACE_MAP = (function() {
      *                    PRIVATE FUNCTION DECLARATIONS
      *************************************************************************/
 
-    var add_wms,animate,clear_coords,cbar_str,gen_color_bar,get_plot,init_events,init_map,init_vars,init_slider,update_color_bar,update_wms;
+    var add_wms,animate,clear_coords,cbar_str,gen_color_bar,get_plot,get_reg_plot,init_events,init_map,init_vars,init_slider,update_color_bar,update_wms;
     /************************************************************************
      *                    PRIVATE FUNCTION IMPLEMENTATIONS
      *************************************************************************/
@@ -73,6 +74,7 @@ var GRACE_MAP = (function() {
         map_center = JSON.parse(map_center);
         plotter = $('#plotter');
         $get_plot = $('#get-plot');
+        $get_reg_plot = $('#get-reg-plot');
         tracker = $region_element.attr('data-tracker');
         tracker = JSON.parse(tracker);
         chart = $(".highcharts-plot").highcharts();
@@ -502,7 +504,8 @@ var GRACE_MAP = (function() {
         map.removeLayer(wms_layer);
         var color_str = cbar_str();
         var store_name = $("#select_layer").find('option:selected').val();
-        var layer_name = 'tot_grace:'+store_name;
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var layer_name = storage_type+'_grace:'+store_name;
         var sld_string = '<StyledLayerDescriptor version="1.0.0"><NamedLayer><Name>'+layer_name+'</Name><UserStyle><isDefault></isDefault><FeatureTypeStyle><Rule>\
         <RasterSymbolizer> \
         <ColorMap>\
@@ -537,8 +540,8 @@ var GRACE_MAP = (function() {
     update_wms = function(date_str){
         // map.removeLayer(wms_layer);
         var color_str = cbar_str();
-
-        var layer_name = 'tot_grace:'+date_str;
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var layer_name = storage_type+'_grace:'+date_str;
         var sld_string = '<StyledLayerDescriptor version="1.0.0"><NamedLayer><Name>'+layer_name+'</Name><UserStyle><FeatureTypeStyle><Rule>\
         <RasterSymbolizer> \
         <ColorMap> \
@@ -565,19 +568,29 @@ var GRACE_MAP = (function() {
         return sld_color_string
     };
 
+
+
+
     get_plot = function(){
         if($("#poly-lat-lon").val() == "" && $("#point-lat-lon").val() == "" && $("#shp-lat-lon").val() == ""){
-            $('.warning').html('<b>No feature selected. Please create a feature using the map interaction dropdown. Plot cannot be generated without a feature.</b>');
+            $('.warning').html('<b>No feature currently selected. Please create a feature using the map interaction dropdown. Plot for specific geographical location cannot be generated without a feature.</b>');
+
             return false;
         }else{
             $('.warning').html('');
         }
 
         var datastring = $get_plot.serialize();
+        var $loading = $('#view-file-loading');
+        $("#btn-get-plot").attr("disabled", true);
+        $loading.removeClass('hidden');
+        $("#plotter").addClass('hidden');
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+        var storage_name = $("#select_storage_type").find('option:selected').text();
 
         $.ajax({
             type:"POST",
-            url:'/apps/grace/plot-region-tot/',
+            url:'/apps/grace/plot-region-'+storage_type+'/',
             dataType:'HTML',
             data:datastring,
             success:function(result) {
@@ -607,7 +620,7 @@ var GRACE_MAP = (function() {
                     },
                     yAxis: {
                         title: {
-                            text: "Total Terrestrial Water Storage Anomaly (cm)"
+                            text: storage_name+" Anomaly (cm)"
                         }
 
                     },
@@ -616,14 +629,84 @@ var GRACE_MAP = (function() {
                     },
                     series: [{
                         data:json_response.values,
-                        name: "Total Terrestrial Water Storage Anomaly (cm)"
+                        name: storage_name+" Anomaly (cm)"
+                    }]
+                });
+                $("#plotter").removeClass('hidden');
+                $loading.addClass('hidden');
+                $("#btn-get-plot").attr("disabled", false);
+            }
+        });
+    };
+
+    $("#plotter").addClass('hidden');
+
+    $("#btn-get-plot").on('click',get_plot);
+
+
+
+// Region Time Series
+
+    get_reg_plot = function(){
+
+
+        var datastring = $get_reg_plot.serialize();
+        var storage_name = $("#select_storage_type").find('option:selected').text();
+        var storage_type = $("#select_storage_type").find('option:selected').val();
+
+        $.ajax({
+            type:"POST",
+            url:'/apps/grace/plot-reg-'+storage_type+'/',
+            dataType:'HTML',
+            data:datastring,
+            success:function(result) {
+                var json_response = JSON.parse(result);
+                $("#reg-plot").highcharts({
+                    chart: {
+                        type:'area',
+                        zoomType: 'x',
+                        height: 350
+                    },
+                    title: {
+                        text: json_response.displayname+' '+storage_name+" Anomaly",
+                        style: {
+                            fontSize: '14px'
+                        }
+                    },
+                    xAxis: {
+                        type: 'datetime',
+                        labels: {
+                            format: '{value:%d %b %Y}',
+                            rotation: 45,
+                            align: 'left'
+                        },
+                        title: {
+                            text: 'Date'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: storage_name+" Anomaly (cm)"
+                        }
+
+                    },
+                    exporting: {
+                        enabled: true
+                    },
+                    series: [{
+                        data:json_response.data,
+                        name: storage_name+" Anomaly (cm)"
+                    },
+                            {
+                        data:[[json_response.xmin, json_response.volmin], [json_response.xmin, json_response.volmax]],
+                        name: "Tracker",
+                        color: '#ff0000',
                     }]
                 });
             }
         });
     };
 
-    $("#btn-get-plot").on('click',get_plot);
 
     // add_test = function(){
     //
@@ -693,15 +776,22 @@ var GRACE_MAP = (function() {
             $("#slider").slider("value", selected_option);
         }).change();
 
+        $("#select_storage_type").change(function(){
+            add_wms();
+            get_plot();
+            get_reg_plot();
+        }).change();
+
         $("#slider").on("slidechange", function(event, ui) {
             var x = tracker[ui.value];
-            chart.series[1].setData([[x,range_min],[x,range_max]]);
+//            chart.series[1].setData([[x,range_min],[x,range_max]]);
             var date_text = $("#select_layer option")[ui.value].text;
             $( "#grace-date" ).val(date_text); //Get the value from the slider
             var date_value = $("#select_layer option")[ui.value].value;
             update_wms(date_value);
 
         });
+
     });
 
     return public_interface;
