@@ -55,27 +55,27 @@ def home(request):
     geoserver_engine = app.get_spatial_dataset_service(name='main_geoserver', as_engine=True)
 
 
-    response = geoserver_engine.list_workspaces()
+#     response = geoserver_engine.list_workspaces()
 
-    if response['success']:
-        workspaces = response['result']
+#     if response['success']:
+#         workspaces = response['result']
 
-        if 'tot_global' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=tot_global, uri=www.googletot.com)
-        if 'sw_global' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=sw_global, uri=www.googlesw.com)
-        if 'soil_global' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=soil_global, uri=www.googlesoil.com)
-        if 'gw_global' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=gw_global, uri=www.googlegw.com)
-        if 'tot_grace' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=tot_grace, uri=www.googletotreg.com)
-        if 'sw_grace' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=sw_grace, uri=www.googleswreg.com)
-        if 'soil_grace' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=soil_grace, uri=www.googlesoilreg.com)
-        if 'gw_grace' not in workspaces:
-            geoserver_engine.create_workspace(workspace_id=gw_grace, uri=www.googlegwreg.com)
+#         if 'tot_global' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=tot_global, uri=www.googletot.com)
+#         if 'sw_global' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=sw_global, uri=www.googlesw.com)
+#         if 'soil_global' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=soil_global, uri=www.googlesoil.com)
+#         if 'gw_global' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=gw_global, uri=www.googlegw.com)
+#         if 'tot_grace' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=tot_grace, uri=www.googletotreg.com)
+#         if 'sw_grace' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=sw_grace, uri=www.googleswreg.com)
+#         if 'soil_grace' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=soil_grace, uri=www.googlesoilreg.com)
+#         if 'gw_grace' not in workspaces:
+#             geoserver_engine.create_workspace(workspace_id=gw_grace, uri=www.googlegwreg.com)
     #-------------------------------------------------------------------------------------
 
 
